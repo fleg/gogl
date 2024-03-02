@@ -92,7 +92,7 @@ func render(c *gogl.Canvas, dt float64) {
 
 	c.Fill(gray)
 
-	c.FillRGBTriangle(int(x1), int(y1), int(x2), int(y2), int(x3), int(y3))
+	c.FillTriangleRGB(int(x1), int(y1), int(x2), int(y2), int(x3), int(y3))
 }
 
 // TODO move to function to support multiple examples

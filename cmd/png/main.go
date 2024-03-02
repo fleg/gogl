@@ -69,7 +69,7 @@ func main() {
 	canvas.FillCircle(450+12, 500+12, 12, red)
 
 	// canvas.FillTriangle(width/2 + 50, height/2 - 50, width/2+width/4, 25, width - 50, height/4, green)
-	canvas.FillRGBTriangle(width/2+50, height/2-50, width/2+width/4, 25, width-50, height/4)
+	canvas.FillTriangleRGB(width/2+50, height/2-50, width/2+width/4, 25, width-50, height/4)
 
 	CanvasToPNG(canvas, "image.png")
 }

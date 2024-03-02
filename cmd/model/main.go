@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"math"
 	"os"
 
 	"gogl/gogl"
@@ -38,6 +39,31 @@ func CanvasToPNG(c *gogl.Canvas, path string) error {
 	return nil
 }
 
+func CanvasFromPNG(path string) (*gogl.Canvas, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+
+	defer f.Close()
+
+	img, err := png.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+
+	c := gogl.NewCanvas(img.Bounds().Dx(), img.Bounds().Dy())
+
+	for y := 0; y < c.Height; y++ {
+		for x := 0; x < c.Width; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			c.PutPixel(x, y, gogl.MakeColor(int(r), int(g), int(b), int(a)))
+		}
+	}
+
+	return c, nil
+}
+
 func projectToScreen(x float64, y float64, w int, h int) (int, int) {
 	return int((x + 1.0) / 2.0 * float64(w)), h - int((y+1.0)/2.0*float64(h))
 }
@@ -61,17 +87,23 @@ func main() {
 	}
 
 	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: -1.0}
+	zb := make([]float64, width * height)
+	for i := 0; i < width*height; i++ {
+		zb[i] = -math.MaxFloat64
+	}
 
 	for i := 0; i < len(m.Faces); i++ {
 		face := m.Faces[i]
 		screen := make([]gogl.Vec2i, 3)
 		world := make([]gogl.Vec3f, 3)
+		zs := make([]float64, 3)
 
 		for j := 0; j < 3; j++ {
 			v := m.Verticies[face[j]]
 
 			world[j] = v
 			screen[j].X, screen[j].Y = projectToScreen(v.X, v.Y, width, height)
+			zs[j] = v.Z
 		}
 
 		normal := world[2].Subtract(&world[0]).CrossProduct(world[1].Subtract(&world[0]))
@@ -80,11 +112,13 @@ func main() {
 		intensity := normal.DotProduct(&light)
 
 		if intensity > 0 {
-			canvas.FillTriangle(
+			canvas.FillTriangleZ(
 				screen[0].X, screen[0].Y,
 				screen[1].X, screen[1].Y,
 				screen[2].X, screen[2].Y,
 				gogl.MakeColor(int(intensity*255), int(intensity*255), int(intensity*255), 255),
+				zs[0], zs[1], zs[2],
+				zb,
 			)
 		}
 	}
