@@ -86,8 +86,13 @@ func main() {
 		panic(err)
 	}
 
+	texture, err := CanvasFromPNG("./assets/african_head_diffuse.png")
+	if err != nil {
+		panic(err)
+	}
+
 	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: -1.0}
-	zb := make([]float64, width * height)
+	zb := make([]float64, width*height)
 	for i := 0; i < width*height; i++ {
 		zb[i] = -math.MaxFloat64
 	}
@@ -97,13 +102,15 @@ func main() {
 		screen := make([]gogl.Vec2i, 3)
 		world := make([]gogl.Vec3f, 3)
 		zs := make([]float64, 3)
+		uvs := make([]gogl.Vec2f, 3)
 
 		for j := 0; j < 3; j++ {
-			v := m.Verticies[face[j]]
+			v := m.Verticies[face.Indicies[j]]
 
 			world[j] = v
 			screen[j].X, screen[j].Y = projectToScreen(v.X, v.Y, width, height)
 			zs[j] = v.Z
+			uvs[j] = m.UVs[face.TextureIndicies[j]]
 		}
 
 		normal := world[2].Subtract(&world[0]).CrossProduct(world[1].Subtract(&world[0]))
@@ -112,13 +119,17 @@ func main() {
 		intensity := normal.DotProduct(&light)
 
 		if intensity > 0 {
-			canvas.FillTriangleZ(
+			canvas.FillTriangleUVZ(
 				screen[0].X, screen[0].Y,
 				screen[1].X, screen[1].Y,
 				screen[2].X, screen[2].Y,
-				gogl.MakeColor(int(intensity*255), int(intensity*255), int(intensity*255), 255),
 				zs[0], zs[1], zs[2],
 				zb,
+				uvs[0].X, uvs[0].Y,
+				uvs[1].X, uvs[1].Y,
+				uvs[2].X, uvs[2].Y,
+				intensity,
+				texture,
 			)
 		}
 	}

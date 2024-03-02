@@ -8,9 +8,16 @@ import (
 )
 
 type (
+	Face struct {
+		Indicies        []int
+		TextureIndicies []int
+		NormalIndicies  []int
+	}
+
 	Model struct {
 		Verticies []Vec3f
-		Faces     [][]int
+		Faces     []Face
+		UVs       []Vec2f
 	}
 )
 
@@ -21,10 +28,7 @@ func NewModelFromFile(path string) (*Model, error) {
 	}
 	defer f.Close()
 
-	m := &Model{
-		Verticies: make([]Vec3f, 0),
-		Faces:     make([][]int, 0),
-	}
+	m := &Model{}
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -35,29 +39,34 @@ func NewModelFromFile(path string) (*Model, error) {
 			fmt.Sscanf(line, "v %f %f %f", &v.X, &v.Y, &v.Z)
 			m.Verticies = append(m.Verticies, v)
 		} else if strings.HasPrefix(line, "f ") {
-			indicies := make([]int, 3)
-			textures := make([]int, 3)
-			nindicies := make([]int, 3)
-
+			f := Face{
+				Indicies:        make([]int, 3),
+				TextureIndicies: make([]int, 3),
+				NormalIndicies:  make([]int, 3),
+			}
 			if strings.Contains(line, "/") {
 				fmt.Sscanf(
 					line,
 					"f %d/%d/%d %d/%d/%d %d/%d/%d",
-					&indicies[0], &textures[0], &nindicies[0],
-					&indicies[1], &textures[1], &nindicies[1],
-					&indicies[2], &textures[2], &nindicies[2],
+					&f.Indicies[0], &f.TextureIndicies[0], &f.NormalIndicies[0],
+					&f.Indicies[1], &f.TextureIndicies[1], &f.NormalIndicies[1],
+					&f.Indicies[2], &f.TextureIndicies[2], &f.NormalIndicies[2],
 				)
 			} else {
-				fmt.Sscanf(line, "f %d %d %d", &indicies[0], &indicies[1], &indicies[2])
+				fmt.Sscanf(line, "f %d %d %d", &f.Indicies[0], &f.Indicies[1], &f.Indicies[2])
 			}
 
 			for i := 0; i < 3; i++ {
-				indicies[i] -= 1
-				textures[i] -= 1
-				nindicies[i] -= 1
+				f.Indicies[i] -= 1
+				f.TextureIndicies[i] -= 1
+				f.NormalIndicies[i] -= 1
 			}
 
-			m.Faces = append(m.Faces, indicies)
+			m.Faces = append(m.Faces, f)
+		} else if strings.HasPrefix(line, "vt ") {
+			uv := Vec2f{}
+			fmt.Sscanf(line, "vt %f %f", &uv.X, &uv.Y)
+			m.UVs = append(m.UVs, uv)
 		}
 	}
 

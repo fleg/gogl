@@ -163,6 +163,10 @@ func MakeColor(r int, g int, b int, a int) uint32 {
 	return uint32(0xFF000000 | (b&0xFF)<<16 | (g&0xFF)<<8 | (r & 0xFF))
 }
 
+func SplitColor(c uint32) (int, int, int, int) {
+	return int(c & 0xFF), int(c>>8) & 0xFF, int(c>>16) & 0xFF, int(c>>24) & 0xFF
+}
+
 func (canvas *Canvas) FillTriangle(x1 int, y1 int, x2 int, y2 int, x3 int, y3 int, color uint32) {
 	// canvas.Line(x1, y1, x2, y2, 0xFF2020FF);
 	// canvas.Line(x3, y3, x2, y2, 0xFF2020FF);
@@ -210,12 +214,55 @@ func (canvas *Canvas) FillTriangleZ(x1 int, y1 int, x2 int, y2 int, x3 int, y3 i
 			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
 			if isBarycentricInside(u, v, w, det) {
 				// interpolate z value
-				z := z1 * float64(u)/float64(det) + z2 * float64(v)/float64(det) + z3 * float64(w)/float64(det)
+				z := z1*float64(u)/float64(det) + z2*float64(v)/float64(det) + z3*float64(w)/float64(det)
 
 				i := x + y*canvas.Width
 				if zb[i] < z {
 					zb[i] = z
 					canvas.PutPixel(x, y, color)
+				}
+			}
+		}
+	}
+}
+
+func (canvas *Canvas) FillTriangleUVZ(
+	x1 int, y1 int,
+	x2 int, y2 int,
+	x3 int, y3 int,
+	z1 float64, z2 float64, z3 float64,
+	zb []float64,
+	u1 float64, v1 float64,
+	u2 float64, v2 float64,
+	u3 float64, v3 float64,
+	intensity float64,
+	texture *Canvas,
+) {
+	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
+
+	for y := bottom; y <= up; y++ {
+		for x := left; x <= right; x++ {
+			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
+			if isBarycentricInside(u, v, w, det) {
+				// interpolate z value
+				z := z1*float64(u)/float64(det) + z2*float64(v)/float64(det) + z3*float64(w)/float64(det)
+
+				i := x + y*canvas.Width
+				if zb[i] < z {
+					zb[i] = z
+
+					// interpolate texture coordinates
+					tx := int((u1*float64(u)/float64(det)+u2*float64(v)/float64(det)+u3*float64(w)/float64(det))*float64(texture.Width) + .5)
+					ty := texture.Height - int((v1*float64(u)/float64(det)+v2*float64(v)/float64(det)+v3*float64(w)/float64(det))*float64(texture.Height)+.5)
+
+					color := texture.GetPixel(tx, ty)
+					r, g, b, _ := SplitColor(color)
+					canvas.PutPixel(x, y, MakeColor(
+						int(float64(r)*intensity),
+						int(float64(g)*intensity),
+						int(float64(b)*intensity),
+						255,
+					))
 				}
 			}
 		}
