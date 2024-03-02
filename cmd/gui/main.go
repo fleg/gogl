@@ -8,9 +8,9 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-const ratio int = 100
-const width int = 16 * ratio
-const height int = 9 * ratio
+const multiplier int = 100
+const width int = 16 * multiplier
+const height int = 9 * multiplier
 
 const red = 0xFF2020FF
 const green = 0xFF20FF20

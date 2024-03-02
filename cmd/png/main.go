@@ -39,8 +39,9 @@ func CanvasToPNG(c *gogl.Canvas, path string) error {
 }
 
 func main() {
-	const width = 800
-	const height = 600
+	const multiplier = 100
+	const width = 16 * multiplier
+	const height = 9 * multiplier
 	const red = 0xFF2020FF
 	const green = 0xFF20FF20
 	const blue = 0xFFFF2020

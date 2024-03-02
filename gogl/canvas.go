@@ -144,16 +144,16 @@ func isBarycentricInside(u int, v int, w int, det int) bool {
 	return false
 }
 
-func triangleBbox(x1 int, y1 int, x2 int, y2 int, x3 int, y3 int) (int, int, int, int) {
-	left := min(x1, min(x2, x3))
-	bottom := min(y1, min(y2, y3))
-	right := max(x1, max(x2, x3))
-	up := max(y1, max(y2, y3))
+func (canvas *Canvas) triangleBbox(x1 int, y1 int, x2 int, y2 int, x3 int, y3 int) (int, int, int, int) {
+	left := max(0, min(x1, min(x2, x3)))
+	bottom := max(0, min(y1, min(y2, y3)))
+	right := min(canvas.Width-1, max(x1, max(x2, x3)))
+	up := min(canvas.Height-1, max(y1, max(y2, y3)))
 
 	return left, bottom, right, up
 }
 
-func makeColor(r uint32, g uint32, b uint32, a uint32) uint32 {
+func MakeColor(r int, g int, b int, a int) uint32 {
 	return uint32(0xFF000000 | (b&0xFF)<<16 | (g&0xFF)<<8 | (r & 0xFF))
 }
 
@@ -162,7 +162,7 @@ func (canvas *Canvas) FillTriangle(x1 int, y1 int, x2 int, y2 int, x3 int, y3 in
 	// canvas.Line(x3, y3, x2, y2, 0xFF2020FF);
 	// canvas.Line(x1, y1, x3, y3, 0xFF2020FF);
 
-	left, bottom, right, up := triangleBbox(x1, y1, x2, y2, x3, y3)
+	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
 
 	// canvas.Line(left, bottom, left + w, bottom, 0xFF2020FF);
 	// canvas.Line(left, bottom, left, bottom + h, 0xFF2020FF);
@@ -179,16 +179,16 @@ func (canvas *Canvas) FillTriangle(x1 int, y1 int, x2 int, y2 int, x3 int, y3 in
 }
 
 func (canvas *Canvas) FillRGBTriangle(x1 int, y1 int, x2 int, y2 int, x3 int, y3 int) {
-	left, bottom, right, up := triangleBbox(x1, y1, x2, y2, x3, y3)
+	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
 
 	for y := bottom; y <= up; y++ {
 		for x := left; x <= right; x++ {
 			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
 			if isBarycentricInside(u, v, w, det) {
-				canvas.PutPixel(x, y, makeColor(
-					uint32(255*u/det),
-					uint32(255*v/det),
-					uint32(255*w/det),
+				canvas.PutPixel(x, y, MakeColor(
+					255*u/det,
+					255*v/det,
+					255*w/det,
 					0xFF,
 				))
 			}
