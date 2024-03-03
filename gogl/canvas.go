@@ -269,6 +269,64 @@ func (canvas *Canvas) FillTriangleUVZ(
 	}
 }
 
+func (canvas *Canvas) FillTriangleNUVZ(
+	x1 int, y1 int,
+	x2 int, y2 int,
+	x3 int, y3 int,
+	z1 float64, z2 float64, z3 float64,
+	zb []float64,
+	u1 float64, v1 float64,
+	u2 float64, v2 float64,
+	u3 float64, v3 float64,
+	texture *Canvas,
+	n1x float64, n1y float64, n1z float64,
+	n2x float64, n2y float64, n2z float64,
+	n3x float64, n3y float64, n3z float64,
+	light *Vec3f,
+) {
+	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
+
+	for y := bottom; y <= up; y++ {
+		for x := left; x <= right; x++ {
+			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
+			if isBarycentricInside(u, v, w, det) {
+				// interpolate z value
+				z := z1*float64(u)/float64(det) + z2*float64(v)/float64(det) + z3*float64(w)/float64(det)
+
+				i := x + y*canvas.Width
+				if zb[i] < z {
+					zb[i] = z
+
+					// interpolate texture coordinates
+					tx := int((u1*float64(u)/float64(det)+u2*float64(v)/float64(det)+u3*float64(w)/float64(det))*float64(texture.Width) + .5)
+					ty := texture.Height - int((v1*float64(u)/float64(det)+v2*float64(v)/float64(det)+v3*float64(w)/float64(det))*float64(texture.Height)+.5)
+
+					// interpolate normals
+					nx := n1x*float64(u)/float64(det) + n2x*float64(v)/float64(det) + n3x*float64(w)/float64(det)
+					ny := n1y*float64(u)/float64(det) + n2y*float64(v)/float64(det) + n3y*float64(w)/float64(det)
+					nz := n1z*float64(u)/float64(det) + n2z*float64(v)/float64(det) + n3z*float64(w)/float64(det)
+
+					n := Vec3f{X: nx, Y: ny, Z: nz}
+					n.Normalize()
+
+					intensity := n.DotProduct(light)
+
+					if intensity > 0 {
+						color := texture.GetPixel(tx, ty)
+						r, g, b, a := SplitColor(color)
+						canvas.PutPixel(x, y, MakeColor(
+							int(float64(r)*intensity),
+							int(float64(g)*intensity),
+							int(float64(b)*intensity),
+							int(float64(a)*intensity),
+						))
+					}
+				}
+			}
+		}
+	}
+}
+
 func NewCanvas(w int, h int) *Canvas {
 	return &Canvas{
 		Width:  w,

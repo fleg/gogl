@@ -91,7 +91,7 @@ func main() {
 		panic(err)
 	}
 
-	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: -1.0}
+	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 1.0}
 	zb := make([]float64, width*height)
 	for i := 0; i < width*height; i++ {
 		zb[i] = -math.MaxFloat64
@@ -103,6 +103,7 @@ func main() {
 		world := make([]gogl.Vec3f, 3)
 		zs := make([]float64, 3)
 		uvs := make([]gogl.Vec2f, 3)
+		ns := make([]gogl.Vec3f, 3)
 
 		for j := 0; j < 3; j++ {
 			v := m.Verticies[face.Indicies[j]]
@@ -111,15 +112,16 @@ func main() {
 			screen[j].X, screen[j].Y = projectToScreen(v.X, v.Y, width, height)
 			zs[j] = v.Z
 			uvs[j] = m.UVs[face.TextureIndicies[j]]
+			ns[j] = m.Normals[face.NormalIndicies[j]]
 		}
 
-		normal := world[2].Subtract(&world[0]).CrossProduct(world[1].Subtract(&world[0]))
-		normal.Normalize()
+		// normal := world[2].Subtract(&world[0]).CrossProduct(world[1].Subtract(&world[0]))
+		// normal.Normalize()
 
-		intensity := normal.DotProduct(&light)
+		// intensity := normal.DotProduct(&light)
 
-		if intensity > 0 {
-			canvas.FillTriangleUVZ(
+		// if intensity > 0.0 {
+			canvas.FillTriangleNUVZ(
 				screen[0].X, screen[0].Y,
 				screen[1].X, screen[1].Y,
 				screen[2].X, screen[2].Y,
@@ -128,10 +130,13 @@ func main() {
 				uvs[0].X, uvs[0].Y,
 				uvs[1].X, uvs[1].Y,
 				uvs[2].X, uvs[2].Y,
-				intensity,
 				texture,
+				ns[0].X, ns[0].Y, ns[0].Z,
+				ns[1].X, ns[1].Y, ns[1].Z,
+				ns[2].X, ns[2].Y, ns[2].Z,
+				&light,
 			)
-		}
+		// }
 	}
 
 	CanvasToPNG(canvas, "model.png")

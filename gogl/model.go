@@ -18,6 +18,7 @@ type (
 		Verticies []Vec3f
 		Faces     []Face
 		UVs       []Vec2f
+		Normals   []Vec3f
 	}
 )
 
@@ -35,7 +36,7 @@ func NewModelFromFile(path string) (*Model, error) {
 		line := scanner.Text()
 
 		if strings.HasPrefix(line, "v ") {
-			var v Vec3f
+			v := Vec3f{}
 			fmt.Sscanf(line, "v %f %f %f", &v.X, &v.Y, &v.Z)
 			m.Verticies = append(m.Verticies, v)
 		} else if strings.HasPrefix(line, "f ") {
@@ -67,6 +68,11 @@ func NewModelFromFile(path string) (*Model, error) {
 			uv := Vec2f{}
 			fmt.Sscanf(line, "vt %f %f", &uv.X, &uv.Y)
 			m.UVs = append(m.UVs, uv)
+		} else if strings.HasPrefix(line, "vn ") {
+			n := Vec3f{}
+			fmt.Sscanf(line, "vn %f %f %f", &n.X, &n.Y, &n.Z)
+			n.Normalize()
+			m.Normals = append(m.Normals, n)
 		}
 	}
 
