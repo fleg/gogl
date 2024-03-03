@@ -115,12 +115,12 @@ func main() {
 			ns[j] = m.Normals[face.NormalIndicies[j]]
 		}
 
-		// normal := world[2].Subtract(&world[0]).CrossProduct(world[1].Subtract(&world[0]))
-		// normal.Normalize()
+		normal := world[1].Subtract(&world[0]).CrossProduct(world[2].Subtract(&world[0]))
+		normal.Normalize()
 
-		// intensity := normal.DotProduct(&light)
+		intensity := normal.DotProduct(&light)
 
-		// if intensity > 0.0 {
+		if intensity > 0.0 {
 			canvas.FillTriangleNUVZ(
 				screen[0].X, screen[0].Y,
 				screen[1].X, screen[1].Y,
@@ -136,7 +136,7 @@ func main() {
 				ns[2].X, ns[2].Y, ns[2].Z,
 				&light,
 			)
-		// }
+		}
 	}
 
 	CanvasToPNG(canvas, "model.png")

@@ -290,21 +290,25 @@ func (canvas *Canvas) FillTriangleNUVZ(
 		for x := left; x <= right; x++ {
 			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
 			if isBarycentricInside(u, v, w, det) {
+				uf := float64(u)/float64(det)
+				vf := float64(v)/float64(det)
+				wf := float64(w)/float64(det)
+
 				// interpolate z value
-				z := z1*float64(u)/float64(det) + z2*float64(v)/float64(det) + z3*float64(w)/float64(det)
+				z := z1*uf + z2*vf + z3*wf
 
 				i := x + y*canvas.Width
 				if zb[i] < z {
 					zb[i] = z
 
 					// interpolate texture coordinates
-					tx := int((u1*float64(u)/float64(det)+u2*float64(v)/float64(det)+u3*float64(w)/float64(det))*float64(texture.Width) + .5)
-					ty := texture.Height - int((v1*float64(u)/float64(det)+v2*float64(v)/float64(det)+v3*float64(w)/float64(det))*float64(texture.Height)+.5)
+					tx := int((u1*uf+u2*vf+u3*wf)*float64(texture.Width) + .5)
+					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float64(texture.Height)+.5)
 
 					// interpolate normals
-					nx := n1x*float64(u)/float64(det) + n2x*float64(v)/float64(det) + n3x*float64(w)/float64(det)
-					ny := n1y*float64(u)/float64(det) + n2y*float64(v)/float64(det) + n3y*float64(w)/float64(det)
-					nz := n1z*float64(u)/float64(det) + n2z*float64(v)/float64(det) + n3z*float64(w)/float64(det)
+					nx := n1x*uf + n2x*vf + n3x*wf
+					ny := n1y*uf + n2y*vf + n3y*wf
+					nz := n1z*uf + n2z*vf + n3z*wf
 
 					n := Vec3f{X: nx, Y: ny, Z: nz}
 					n.Normalize()
