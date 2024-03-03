@@ -269,6 +269,13 @@ func (canvas *Canvas) FillTriangleUVZ(
 	}
 }
 
+func barycentricO(x int, y int, x1 int, y1 int, x2 int, y2 int, x3 int, y3 int, det int) (int, int, int) {
+	u := (y2-y3)*(x-x3) + (x3-x2)*(y-y3)
+	v := (y3-y1)*(x-x3) + (x1-x3)*(y-y3)
+	w := det - u - v
+	return u, v, w
+}
+
 func (canvas *Canvas) FillTriangleNUVZ(
 	x1 int, y1 int,
 	x2 int, y2 int,
@@ -286,9 +293,11 @@ func (canvas *Canvas) FillTriangleNUVZ(
 ) {
 	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
 
+	det := (x1-x3)*(y2-y3) - (x2-x3)*(y1-y3)
+
 	for y := bottom; y <= up; y++ {
 		for x := left; x <= right; x++ {
-			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
+			u, v, w := barycentricO(x, y, x1, y1, x2, y2, x3, y3, det)
 			if isBarycentricInside(u, v, w, det) {
 				uf := float32(u)/float32(det)
 				vf := float32(v)/float32(det)
