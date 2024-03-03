@@ -273,15 +273,15 @@ func (canvas *Canvas) FillTriangleNUVZ(
 	x1 int, y1 int,
 	x2 int, y2 int,
 	x3 int, y3 int,
-	z1 float64, z2 float64, z3 float64,
-	zb []float64,
-	u1 float64, v1 float64,
-	u2 float64, v2 float64,
-	u3 float64, v3 float64,
+	z1 float32, z2 float32, z3 float32,
+	zb []float32,
+	u1 float32, v1 float32,
+	u2 float32, v2 float32,
+	u3 float32, v3 float32,
 	texture *Canvas,
-	n1x float64, n1y float64, n1z float64,
-	n2x float64, n2y float64, n2z float64,
-	n3x float64, n3y float64, n3z float64,
+	n1x float32, n1y float32, n1z float32,
+	n2x float32, n2y float32, n2z float32,
+	n3x float32, n3y float32, n3z float32,
 	light *Vec3f,
 ) {
 	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
@@ -290,9 +290,9 @@ func (canvas *Canvas) FillTriangleNUVZ(
 		for x := left; x <= right; x++ {
 			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
 			if isBarycentricInside(u, v, w, det) {
-				uf := float64(u)/float64(det)
-				vf := float64(v)/float64(det)
-				wf := float64(w)/float64(det)
+				uf := float32(u)/float32(det)
+				vf := float32(v)/float32(det)
+				wf := float32(w)/float32(det)
 
 				// interpolate z value
 				z := z1*uf + z2*vf + z3*wf
@@ -302,8 +302,8 @@ func (canvas *Canvas) FillTriangleNUVZ(
 					zb[i] = z
 
 					// interpolate texture coordinates
-					tx := int((u1*uf+u2*vf+u3*wf)*float64(texture.Width) + .5)
-					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float64(texture.Height)+.5)
+					tx := int((u1*uf+u2*vf+u3*wf)*float32(texture.Width) + .5)
+					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float32(texture.Height)+.5)
 
 					// interpolate normals
 					nx := n1x*uf + n2x*vf + n3x*wf
@@ -319,10 +319,10 @@ func (canvas *Canvas) FillTriangleNUVZ(
 						color := texture.GetPixel(tx, ty)
 						r, g, b, a := SplitColor(color)
 						canvas.PutPixel(x, y, MakeColor(
-							int(float64(r)*intensity),
-							int(float64(g)*intensity),
-							int(float64(b)*intensity),
-							int(float64(a)*intensity),
+							int(float32(r)*intensity),
+							int(float32(g)*intensity),
+							int(float32(b)*intensity),
+							int(float32(a)*intensity),
 						))
 					}
 				}
