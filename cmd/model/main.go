@@ -64,8 +64,20 @@ func CanvasFromPNG(path string) (*gogl.Canvas, error) {
 	return c, nil
 }
 
-func projectToScreen(x float64, y float64, w int, h int) (int, int) {
-	return int((x + 1.0) / 2.0 * float64(w)), h - int((y+1.0)/2.0*float64(h))
+// x and y are offsets on X and Y axis
+func NewViewPort(x int, y int, w int, h int) *gogl.Matrix4f {
+	vp := gogl.NewIdentityMatrix4[float64]()
+
+		// {w/2, 0,   0, x+w/2},
+		// {0,  -h/2, 0, y+h/2},
+		// {0,   0,   1, 0},
+		// {0,   0,   0, 1}
+	vp.M[0][3] = float64(x + w/2)
+	vp.M[1][3] = float64(y + h/2)
+	vp.M[0][0] = float64(w/2)
+	vp.M[1][1] = -float64(h/2) // invert Y axis to flip image horizonataly
+
+	return &vp
 }
 
 func main() {
@@ -92,6 +104,13 @@ func main() {
 	}
 
 	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 1.0}
+	camera := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 3.0}
+
+	projection := gogl.NewIdentityMatrix4[float64]()
+	projection.M[3][2] = -1/camera.Z
+
+	viewport := NewViewPort(width / 8, height / 8, 3*width/4, 3*height/4)
+
 	zb := make([]float64, width*height)
 	for i := 0; i < width*height; i++ {
 		zb[i] = -math.MaxFloat64
@@ -108,35 +127,33 @@ func main() {
 		for j := 0; j < 3; j++ {
 			v := m.Verticies[face.Indicies[j]]
 
+			s := viewport.Multiply(&projection).MultiplyVec3(&v)
+
 			world[j] = v
-			screen[j].X, screen[j].Y = projectToScreen(v.X, v.Y, width, height)
-			zs[j] = v.Z
+			screen[j].X = int(s.X)
+			screen[j].Y = int(s.Y)
+
+			zs[j] = s.Z
 			uvs[j] = m.UVs[face.TextureIndicies[j]]
 			ns[j] = m.Normals[face.NormalIndicies[j]]
 		}
 
-		normal := world[1].Subtract(&world[0]).CrossProduct(world[2].Subtract(&world[0]))
-		normal.Normalize()
+		canvas.FillTriangleNUVZ(
+			screen[0].X, screen[0].Y,
+			screen[1].X, screen[1].Y,
+			screen[2].X, screen[2].Y,
+			zs[0], zs[1], zs[2],
+			zb,
+			uvs[0].X, uvs[0].Y,
+			uvs[1].X, uvs[1].Y,
+			uvs[2].X, uvs[2].Y,
+			texture,
+			ns[0].X, ns[0].Y, ns[0].Z,
+			ns[1].X, ns[1].Y, ns[1].Z,
+			ns[2].X, ns[2].Y, ns[2].Z,
+			&light,
+		)
 
-		intensity := normal.DotProduct(&light)
-
-		if intensity > 0.0 {
-			canvas.FillTriangleNUVZ(
-				screen[0].X, screen[0].Y,
-				screen[1].X, screen[1].Y,
-				screen[2].X, screen[2].Y,
-				zs[0], zs[1], zs[2],
-				zb,
-				uvs[0].X, uvs[0].Y,
-				uvs[1].X, uvs[1].Y,
-				uvs[2].X, uvs[2].Y,
-				texture,
-				ns[0].X, ns[0].Y, ns[0].Z,
-				ns[1].X, ns[1].Y, ns[1].Z,
-				ns[2].X, ns[2].Y, ns[2].Z,
-				&light,
-			)
-		}
 	}
 
 	CanvasToPNG(canvas, "model.png")
