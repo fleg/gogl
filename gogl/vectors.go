@@ -1,10 +1,10 @@
 package gogl
 
-import "github.com/chewxy/math32"
+import "math"
 
 type (
 	Number interface {
-		int | float32
+		int | float64
 	}
 
 	Vec2[N Number] struct {
@@ -18,8 +18,8 @@ type (
 		Z N
 	}
 
-	Vec3f = Vec3[float32]
-	Vec2f = Vec2[float32]
+	Vec3f = Vec3[float64]
+	Vec2f = Vec2[float64]
 
 	Vec3i = Vec3[int]
 	Vec2i = Vec2[int]
@@ -47,7 +47,7 @@ func (v *Vec3[N]) DotProduct(u *Vec3[N]) N {
 }
 
 func (v *Vec3[N]) Length() N {
-	return N(math32.Sqrt(float32(v.X*v.X + v.Y*v.Y + v.Z*v.Z)))
+	return N(math.Sqrt(float64(v.X*v.X + v.Y*v.Y + v.Z*v.Z)))
 }
 
 func (v *Vec3[N]) Normalize() {

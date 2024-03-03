@@ -64,8 +64,8 @@ func CanvasFromPNG(path string) (*gogl.Canvas, error) {
 	return c, nil
 }
 
-func projectToScreen(x float32, y float32, w int, h int) (int, int) {
-	return int((x + 1.0) / 2.0 * float32(w)), h - int((y+1.0)/2.0*float32(h))
+func projectToScreen(x float64, y float64, w int, h int) (int, int) {
+	return int((x + 1.0) / 2.0 * float64(w)), h - int((y+1.0)/2.0*float64(h))
 }
 
 func main() {
@@ -92,16 +92,16 @@ func main() {
 	}
 
 	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 1.0}
-	zb := make([]float32, width*height)
+	zb := make([]float64, width*height)
 	for i := 0; i < width*height; i++ {
-		zb[i] = -math.MaxFloat32
+		zb[i] = -math.MaxFloat64
 	}
 
 	for i := 0; i < len(m.Faces); i++ {
 		face := m.Faces[i]
 		screen := make([]gogl.Vec2i, 3)
 		world := make([]gogl.Vec3f, 3)
-		zs := make([]float32, 3)
+		zs := make([]float64, 3)
 		uvs := make([]gogl.Vec2f, 3)
 		ns := make([]gogl.Vec3f, 3)
 
