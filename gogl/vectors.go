@@ -18,8 +18,16 @@ type (
 		Z N
 	}
 
+	Vec4[N Number] struct {
+		X N
+		Y N
+		Z N
+		W N
+	}
+
 	Vec3f = Vec3[float64]
 	Vec2f = Vec2[float64]
+	Vec4f = Vec4[float64]
 
 	Vec3i = Vec3[int]
 	Vec2i = Vec2[int]
@@ -50,9 +58,20 @@ func (v *Vec3[N]) Length() N {
 	return N(math.Sqrt(float64(v.X*v.X + v.Y*v.Y + v.Z*v.Z)))
 }
 
-func (v *Vec3[N]) Normalize() {
+func (v *Vec3[N]) Normalize() *Vec3[N] {
 	l := v.Length()
 	v.X /= l
 	v.Y /= l
 	v.Z /= l
+
+	return v
+}
+
+func (v *Vec3[N]) ToVec4() *Vec4[N] {
+	return &Vec4[N]{
+		X: v.X,
+		Y: v.Y,
+		Z: v.Z,
+		W: N(1),
+	}
 }

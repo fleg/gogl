@@ -8,7 +8,7 @@ type (
 	Matrix4f = Matrix4[float64]
 )
 
-func NewIdentityMatrix4[N Number]() Matrix4[N] {
+func NewIdentityMatrix4[N Number]() *Matrix4[N] {
 	m := Matrix4[N]{}
 
 	m.M[0][0] = N(1)
@@ -16,7 +16,7 @@ func NewIdentityMatrix4[N Number]() Matrix4[N] {
 	m.M[2][2] = N(1)
 	m.M[3][3] = N(1)
 
-	return m
+	return &m
 }
 
 
@@ -35,14 +35,13 @@ func (m *Matrix4[N]) Multiply(n *Matrix4[N]) *Matrix4[N] {
 	return &r
 }
 
-func (m *Matrix4[N]) MultiplyVec3(v *Vec3[N]) *Vec3[N] {
-	r := &Vec3[N]{}
+func (m *Matrix4[N]) MultiplyVec4(v *Vec4[N]) *Vec4[N] {
+	r := &Vec4[N]{}
 
-	t :=  m.M[3][0]*v.X + m.M[3][1]*v.Y + m.M[3][2]*v.Z + m.M[3][3]
-
-	r.X = (m.M[0][0]*v.X + m.M[0][1]*v.Y + m.M[0][2]*v.Z + m.M[0][3])/t
-	r.Y = (m.M[1][0]*v.X + m.M[1][1]*v.Y + m.M[1][2]*v.Z + m.M[1][3])/t
-	r.Z = (m.M[2][0]*v.X + m.M[2][1]*v.Y + m.M[2][2]*v.Z + m.M[2][3])/t
+	r.X = m.M[0][0]*v.X + m.M[0][1]*v.Y + m.M[0][2]*v.Z + m.M[0][3]
+	r.Y = m.M[1][0]*v.X + m.M[1][1]*v.Y + m.M[1][2]*v.Z + m.M[1][3]
+	r.Z = m.M[2][0]*v.X + m.M[2][1]*v.Y + m.M[2][2]*v.Z + m.M[2][3]
+	r.W = m.M[3][0]*v.X + m.M[3][1]*v.Y + m.M[3][2]*v.Z + m.M[3][3]
 
 	return r
 }

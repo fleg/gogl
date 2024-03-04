@@ -19,8 +19,20 @@ type (
 		Faces     []Face
 		UVs       []Vec2f
 		Normals   []Vec3f
+		Texture   *Canvas
 	}
 )
+
+func (m *Model) LoadTexture(path string) error {
+	t, err := CanvasFromPNG(path)
+	if err != nil {
+		return err
+	}
+
+	m.Texture = t
+
+	return nil
+}
 
 func NewModelFromFile(path string) (*Model, error) {
 	f, err := os.Open(path)

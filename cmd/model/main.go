@@ -1,68 +1,9 @@
 package main
 
 import (
-	"image"
-	"image/color"
-	"image/png"
-	"math"
-	"os"
-
 	"gogl/gogl"
+	"math"
 )
-
-func CanvasToPNG(c *gogl.Canvas, path string) error {
-	img := image.NewNRGBA(image.Rect(0, 0, c.Width, c.Height))
-
-	for y := 0; y < c.Height; y++ {
-		for x := 0; x < c.Width; x++ {
-			p := c.GetPixel(x, y)
-			img.Set(x, y, color.NRGBA{
-				R: uint8((p >> 0) & 0xFF),
-				G: uint8((p >> 8) & 0xFF),
-				B: uint8((p >> 16) & 0xFF),
-				A: uint8((p >> 24) & 0xFF),
-			})
-		}
-	}
-
-	f, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-
-	defer f.Close()
-
-	if err := png.Encode(f, img); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func CanvasFromPNG(path string) (*gogl.Canvas, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer f.Close()
-
-	img, err := png.Decode(f)
-	if err != nil {
-		return nil, err
-	}
-
-	c := gogl.NewCanvas(img.Bounds().Dx(), img.Bounds().Dy())
-
-	for y := 0; y < c.Height; y++ {
-		for x := 0; x < c.Width; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			c.PutPixel(x, y, gogl.MakeColor(int(r), int(g), int(b), int(a)))
-		}
-	}
-
-	return c, nil
-}
 
 // x and y are offsets on X and Y axis
 func NewViewPort(x int, y int, w int, h int) *gogl.Matrix4f {
@@ -77,7 +18,37 @@ func NewViewPort(x int, y int, w int, h int) *gogl.Matrix4f {
 	vp.M[0][0] = float64(w/2)
 	vp.M[1][1] = -float64(h/2) // invert Y axis to flip image horizonataly
 
-	return &vp
+	// vp.M[2][2] = float64(depth)/2
+	// vp.M[2][3] = float64(depth)/2
+
+	return vp
+}
+
+func LookAt(eye *gogl.Vec3f, center *gogl.Vec3f, up *gogl.Vec3f) *gogl.Matrix4f {
+	minv := gogl.NewIdentityMatrix4[float64]()
+	tr := gogl.NewIdentityMatrix4[float64]()
+
+	z := eye.Subtract(center).Normalize()
+	x := up.CrossProduct(z).Normalize()
+	y := z.CrossProduct(x).Normalize()
+
+	minv.M[0][0] = x.X
+	minv.M[1][0] = y.X
+	minv.M[2][0] = z.X
+
+	minv.M[0][1] = x.Y
+	minv.M[1][1] = y.Y
+	minv.M[2][1] = z.Y
+
+	minv.M[0][2] = x.Z
+	minv.M[1][2] = y.Z
+	minv.M[2][2] = z.Z
+
+	tr.M[0][3] = -center.X
+	tr.M[1][3] = -center.Y
+	tr.M[2][3] = -center.Z
+
+	return minv.Multiply(tr)
 }
 
 func main() {
@@ -92,69 +63,89 @@ func main() {
 
 	canvas.Fill(0xFF000000)
 
-	m, err := gogl.NewModelFromFile("./assets/african_head.obj")
-	// m, err := gogl.NewModelFromFile("./assets/teapot.obj")
+	head, err := gogl.NewModelFromFile("./assets/african_head.obj")
 	if err != nil {
 		panic(err)
 	}
-
-	texture, err := CanvasFromPNG("./assets/african_head_diffuse.png")
-	if err != nil {
+	if err := head.LoadTexture("./assets/african_head_diffuse.png"); err != nil {
 		panic(err)
 	}
 
-	light := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 1.0}
-	camera := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 3.0}
+	floor, err := gogl.NewModelFromFile("./assets/floor.obj")
+	if err != nil {
+		panic(err)
+	}
+	if err := floor.LoadTexture("./assets/floor_diffuse.png"); err != nil {
+		panic(err)
+	}
+
+
+	models := []*gogl.Model{head, floor}
+
+	light := gogl.Vec3f{X: 1.0, Y: 1.0, Z: 1.0}
+	eye := gogl.Vec3f{X: 1.0, Y: 1.0, Z: 3.0}
+	center := gogl.Vec3f{X: 0.0, Y: 0.0, Z: 0.0}
+	up := gogl.Vec3f{X: 0.0, Y: 1.0, Z: 0.0}
+
+	light.Normalize()
 
 	projection := gogl.NewIdentityMatrix4[float64]()
-	projection.M[3][2] = -1/camera.Z
+	projection.M[3][2] = -1/eye.Subtract(&center).Length()
 
 	viewport := NewViewPort(width / 8, height / 8, 3*width/4, 3*height/4)
+
+	modelView := LookAt(&eye, &center, &up)
 
 	zb := make([]float64, width*height)
 	for i := 0; i < width*height; i++ {
 		zb[i] = -math.MaxFloat64
 	}
 
-	for i := 0; i < len(m.Faces); i++ {
-		face := m.Faces[i]
-		screen := make([]gogl.Vec2i, 3)
-		world := make([]gogl.Vec3f, 3)
-		zs := make([]float64, 3)
-		uvs := make([]gogl.Vec2f, 3)
-		ns := make([]gogl.Vec3f, 3)
+	for k := 0; k < len(models); k++ {
+		m := models[k]
 
-		for j := 0; j < 3; j++ {
-			v := m.Verticies[face.Indicies[j]]
+		for i := 0; i < len(m.Faces); i++ {
+			face := m.Faces[i]
+			screen := make([]gogl.Vec2i, 3)
+			world := make([]gogl.Vec3f, 3)
+			zs := make([]float64, 3)
+			ws := make([]float64, 3)
+			uvs := make([]gogl.Vec2f, 3)
+			ns := make([]gogl.Vec3f, 3)
 
-			s := viewport.Multiply(&projection).MultiplyVec3(&v)
+			for j := 0; j < 3; j++ {
+				v := m.Verticies[face.Indicies[j]]
 
-			world[j] = v
-			screen[j].X = int(s.X)
-			screen[j].Y = int(s.Y)
+				s := viewport.Multiply(projection).Multiply(modelView).MultiplyVec4(v.ToVec4())
 
-			zs[j] = s.Z
-			uvs[j] = m.UVs[face.TextureIndicies[j]]
-			ns[j] = m.Normals[face.NormalIndicies[j]]
+				world[j] = v
+				screen[j].X = int(s.X/s.W+.5)
+				screen[j].Y = int(s.Y/s.W+.5)
+
+				zs[j] = s.Z/s.W
+				ws[j] = s.W
+				uvs[j] = m.UVs[face.TextureIndicies[j]]
+				ns[j] = m.Normals[face.NormalIndicies[j]]
+			}
+
+			canvas.FillTriangleNUVZ(
+				screen[0].X, screen[0].Y,
+				screen[1].X, screen[1].Y,
+				screen[2].X, screen[2].Y,
+				zs[0], zs[1], zs[2],
+				ws[0], ws[1], ws[2],
+				zb,
+				uvs[0].X, uvs[0].Y,
+				uvs[1].X, uvs[1].Y,
+				uvs[2].X, uvs[2].Y,
+				m.Texture,
+				ns[0].X, ns[0].Y, ns[0].Z,
+				ns[1].X, ns[1].Y, ns[1].Z,
+				ns[2].X, ns[2].Y, ns[2].Z,
+				&light,
+			)
 		}
-
-		canvas.FillTriangleNUVZ(
-			screen[0].X, screen[0].Y,
-			screen[1].X, screen[1].Y,
-			screen[2].X, screen[2].Y,
-			zs[0], zs[1], zs[2],
-			zb,
-			uvs[0].X, uvs[0].Y,
-			uvs[1].X, uvs[1].Y,
-			uvs[2].X, uvs[2].Y,
-			texture,
-			ns[0].X, ns[0].Y, ns[0].Z,
-			ns[1].X, ns[1].Y, ns[1].Z,
-			ns[2].X, ns[2].Y, ns[2].Z,
-			&light,
-		)
-
 	}
 
-	CanvasToPNG(canvas, "model.png")
+	gogl.CanvasToPNG(canvas, "model.png")
 }

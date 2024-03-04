@@ -274,6 +274,7 @@ func (canvas *Canvas) FillTriangleNUVZ(
 	x2 int, y2 int,
 	x3 int, y3 int,
 	z1 float64, z2 float64, z3 float64,
+	w1 float64, w2 float64, w3 float64,
 	zb []float64,
 	u1 float64, v1 float64,
 	u2 float64, v2 float64,
@@ -286,13 +287,21 @@ func (canvas *Canvas) FillTriangleNUVZ(
 ) {
 	left, bottom, right, up := canvas.triangleBbox(x1, y1, x2, y2, x3, y3)
 
-	for y := bottom; y <= up; y++ {
-		for x := left; x <= right; x++ {
+	for x := left; x <= right; x++ {
+		for y := bottom; y <= up; y++ {
 			u, v, w, det := barycentric(x, y, x1, y1, x2, y2, x3, y3)
 			if isBarycentricInside(u, v, w, det) {
-				uf := float64(u)/float64(det)
-				vf := float64(v)/float64(det)
-				wf := float64(w)/float64(det)
+				uf := (float64(u)/float64(det))/w1
+				vf := (float64(v)/float64(det))/w2
+				wf := (float64(w)/float64(det))/w3
+
+				sum := uf+vf+wf
+
+				uf /= sum
+				vf /= sum
+				wf /= sum
+
+
 
 				// interpolate z value
 				z := z1*uf + z2*vf + z3*wf
@@ -303,28 +312,27 @@ func (canvas *Canvas) FillTriangleNUVZ(
 
 					// interpolate texture coordinates
 					tx := int((u1*uf+u2*vf+u3*wf)*float64(texture.Width) + .5)
-					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float64(texture.Height)+.5)
+					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float64(texture.Height) + .5)
+					canvas.PutPixel(x, y, texture.GetPixel(tx, ty))
+					// // interpolate normals
+					// nx := n1x*uf + n2x*vf + n3x*wf
+					// ny := n1y*uf + n2y*vf + n3y*wf
+					// nz := n1z*uf + n2z*vf + n3z*wf
 
-					// interpolate normals
-					nx := n1x*uf + n2x*vf + n3x*wf
-					ny := n1y*uf + n2y*vf + n3y*wf
-					nz := n1z*uf + n2z*vf + n3z*wf
+					// n := Vec3f{X: nx, Y: ny, Z: nz}
 
-					n := Vec3f{X: nx, Y: ny, Z: nz}
-					n.Normalize()
+					// intensity := n.Normalize().DotProduct(light)
 
-					intensity := n.DotProduct(light)
-
-					if intensity > 0 {
-						color := texture.GetPixel(tx, ty)
-						r, g, b, a := SplitColor(color)
-						canvas.PutPixel(x, y, MakeColor(
-							int(float64(r)*intensity),
-							int(float64(g)*intensity),
-							int(float64(b)*intensity),
-							int(float64(a)*intensity),
-						))
-					}
+					// if intensity > 0 {
+					// 	color := texture.GetPixel(tx, ty)
+					// 	r, g, b, a := SplitColor(color)
+					// 	canvas.PutPixel(x, y, MakeColor(
+					// 		int(float64(r)*intensity),
+					// 		int(float64(g)*intensity),
+					// 		int(float64(b)*intensity),
+					// 		int(float64(a)*intensity),
+					// 	))
+					// }
 				}
 			}
 		}
