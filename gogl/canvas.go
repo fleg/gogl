@@ -301,8 +301,6 @@ func (canvas *Canvas) FillTriangleNUVZ(
 				vf /= sum
 				wf /= sum
 
-
-
 				// interpolate z value
 				z := z1*uf + z2*vf + z3*wf
 
@@ -313,26 +311,26 @@ func (canvas *Canvas) FillTriangleNUVZ(
 					// interpolate texture coordinates
 					tx := int((u1*uf+u2*vf+u3*wf)*float64(texture.Width) + .5)
 					ty := texture.Height - int((v1*uf+v2*vf+v3*wf)*float64(texture.Height) + .5)
-					canvas.PutPixel(x, y, texture.GetPixel(tx, ty))
-					// // interpolate normals
-					// nx := n1x*uf + n2x*vf + n3x*wf
-					// ny := n1y*uf + n2y*vf + n3y*wf
-					// nz := n1z*uf + n2z*vf + n3z*wf
 
-					// n := Vec3f{X: nx, Y: ny, Z: nz}
+					// interpolate normals
+					nx := n1x*uf + n2x*vf + n3x*wf
+					ny := n1y*uf + n2y*vf + n3y*wf
+					nz := n1z*uf + n2z*vf + n3z*wf
 
-					// intensity := n.Normalize().DotProduct(light)
+					n := Vec3f{X: nx, Y: ny, Z: nz}
 
-					// if intensity > 0 {
-					// 	color := texture.GetPixel(tx, ty)
-					// 	r, g, b, a := SplitColor(color)
-					// 	canvas.PutPixel(x, y, MakeColor(
-					// 		int(float64(r)*intensity),
-					// 		int(float64(g)*intensity),
-					// 		int(float64(b)*intensity),
-					// 		int(float64(a)*intensity),
-					// 	))
-					// }
+					intensity := n.Normalize().DotProduct(light)
+
+					if intensity > 0 {
+						color := texture.GetPixel(tx, ty)
+						r, g, b, a := SplitColor(color)
+						canvas.PutPixel(x, y, MakeColor(
+							int(float64(r)*intensity),
+							int(float64(g)*intensity),
+							int(float64(b)*intensity),
+							int(float64(a)*intensity),
+						))
+					}
 				}
 			}
 		}
