@@ -19,7 +19,6 @@ func NewIdentityMatrix4[N Number]() *Matrix4[N] {
 	return &m
 }
 
-
 func (m *Matrix4[N]) Multiply(n *Matrix4[N]) *Matrix4[N] {
 	r := Matrix4[N]{}
 

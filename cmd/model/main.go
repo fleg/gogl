@@ -9,14 +9,14 @@ import (
 func NewViewPort(x int, y int, w int, h int) *gogl.Matrix4f {
 	vp := gogl.NewIdentityMatrix4[float64]()
 
-		// {w/2, 0,   0, x+w/2},
-		// {0,  -h/2, 0, y+h/2},
-		// {0,   0,   1, 0},
-		// {0,   0,   0, 1}
+	// {w/2, 0,   0, x+w/2},
+	// {0,  -h/2, 0, y+h/2},
+	// {0,   0,   1, 0},
+	// {0,   0,   0, 1}
 	vp.M[0][3] = float64(x + w/2)
 	vp.M[1][3] = float64(y + h/2)
-	vp.M[0][0] = float64(w/2)
-	vp.M[1][1] = -float64(h/2) // invert Y axis to flip image horizonataly
+	vp.M[0][0] = float64(w / 2)
+	vp.M[1][1] = -float64(h / 2) // invert Y axis to flip image horizonataly
 
 	// vp.M[2][2] = float64(depth)/2
 	// vp.M[2][3] = float64(depth)/2
@@ -60,6 +60,7 @@ func main() {
 	const blue = 0xFFFF2020
 
 	canvas := gogl.NewCanvas(width, height)
+	renderer := gogl.NewRenderer3D(canvas)
 
 	canvas.Fill(0xFF000000)
 
@@ -79,7 +80,6 @@ func main() {
 		panic(err)
 	}
 
-
 	models := []*gogl.Model{head, floor}
 
 	light := gogl.Vec3f{X: 1.0, Y: 1.0, Z: 1.0}
@@ -90,9 +90,9 @@ func main() {
 	light.Normalize()
 
 	projection := gogl.NewIdentityMatrix4[float64]()
-	projection.M[3][2] = -1/eye.Subtract(&center).Length()
+	projection.M[3][2] = -1 / eye.Subtract(&center).Length()
 
-	viewport := NewViewPort(width / 8, height / 8, 3*width/4, 3*height/4)
+	viewport := NewViewPort(width/8, height/8, 3*width/4, 3*height/4)
 
 	modelView := LookAt(&eye, &center, &up)
 
@@ -119,16 +119,16 @@ func main() {
 				s := viewport.Multiply(projection).Multiply(modelView).MultiplyVec4(v.ToVec4())
 
 				world[j] = v
-				screen[j].X = int(s.X/s.W+.5)
-				screen[j].Y = int(s.Y/s.W+.5)
+				screen[j].X = int(s.X/s.W + .5)
+				screen[j].Y = int(s.Y/s.W + .5)
 
-				zs[j] = s.Z/s.W
+				zs[j] = s.Z / s.W
 				ws[j] = s.W
 				uvs[j] = m.UVs[face.TextureIndicies[j]]
 				ns[j] = m.Normals[face.NormalIndicies[j]]
 			}
 
-			canvas.FillTriangleNUVZ(
+			renderer.FillTriangle(
 				screen[0].X, screen[0].Y,
 				screen[1].X, screen[1].Y,
 				screen[2].X, screen[2].Y,

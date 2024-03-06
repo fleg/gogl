@@ -78,7 +78,7 @@ func rotatePoint(x float64, y float64, angle float64, cx float64, cy float64) (f
 	return xf, yf
 }
 
-func render(c *gogl.Canvas, dt float64) {
+func render(r *gogl.Renderer2D, dt float64) {
 	angle := 0.1 * ad * dt * math.Pi
 
 	cx, cy := triangleCenter(x1, y1, x2, y2, x3, y3)
@@ -90,9 +90,7 @@ func render(c *gogl.Canvas, dt float64) {
 	x2, y2 = rotatePoint(x2, y2, angle, cx, cy)
 	x3, y3 = rotatePoint(x3, y3, angle, cx, cy)
 
-	c.Fill(gray)
-
-	c.FillTriangleRGB(int(x1), int(y1), int(x2), int(y2), int(x3), int(y3))
+	r.FillTriangleRGB(int(x1), int(y1), int(x2), int(y2), int(x3), int(y3))
 }
 
 // TODO move to function to support multiple examples
@@ -122,6 +120,7 @@ func main() {
 	defer renderer.Destroy()
 
 	canvas := gogl.NewCanvas(width, height)
+	renderer2d := gogl.NewRenderer2D(canvas)
 
 	prevTicks := sdl.GetTicks()
 	for {
@@ -137,7 +136,8 @@ func main() {
 			}
 		}
 
-		render(canvas, dt)
+		canvas.Fill(gray)
+		render(renderer2d, dt)
 
 		texture, err := renderer.CreateTexture(uint32(sdl.PIXELFORMAT_RGBA32), sdl.TEXTUREACCESS_STREAMING, int32(width), int32(height))
 		if err != nil {
